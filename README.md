@@ -125,7 +125,7 @@ go version # go1.18.4
 go install github.com/magefile/mage@latest
 ```
 
-You need to run **make crosscompile** command. The above code block will create a binary named filebeat-linux-amd64 in *filebeat/build/bin* directory
+You need to run **make crosscompile** command. The below code block will create a binary named filebeat-linux-amd64 in *filebeat/build/bin* directory
 ```
 cd
 git clone https://github.com/picusnext/beats.git
