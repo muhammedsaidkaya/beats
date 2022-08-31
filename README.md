@@ -1,8 +1,3 @@
-[![Build Status](https://beats-ci.elastic.co/job/Beats/job/beats/job/master/badge/icon)](https://beats-ci.elastic.co/job/Beats/job/beats/job/master/)
-[![Travis](https://travis-ci.org/elastic/beats.svg?branch=master)](https://travis-ci.org/elastic/beats)
-[![GoReportCard](http://goreportcard.com/badge/elastic/beats)](http://goreportcard.com/report/elastic/beats)
-[![Reviewed by Hound](https://img.shields.io/badge/Reviewed_by-Hound-8E64B0.svg)](https://houndci.com)
-
 # Beats - The Lightweight Shippers of the Elastic Stack
 
 The [Beats](https://www.elastic.co/products/beats) are lightweight data
@@ -121,3 +116,54 @@ It's possible to configure the build on a GitHub PR by labelling the PR with the
 [apm-beats-update]: https://beats-ci.elastic.co/job/Beats/job/apm-beats-update/
 [apm-beats-packaging]: https://beats-ci.elastic.co/job/Beats/job/packaging/
 [apm-beats-tester]: https://beats-ci.elastic.co/job/Beats/job/beats-tester/
+
+## Manual Filebeat Compilation
+
+You need to install mage tool on your local environment. Mage is a make/rake-like build tool using Go. You write plain-old go functions, and Mage automatically uses them as Makefile-like runnable targets. For more information [...](https://magefile.org/)
+```
+go version # go1.18.4
+go install github.com/magefile/mage@latest
+```
+
+You need to run **make crosscompile** command. The above code block will create a binary named filebeat-linux-amd64 in *filebeat/build/bin* directory
+```
+cd
+git clone https://github.com/picusnext/beats.git
+cd beats
+make crosscompile
+ls ~/beats/filebeat/build/bin/filebeat-linux-amd64
+```
+
+## Filebeat Custom Processor
+
+All our processor in **libbeat/processor** dir. To create a custom processor, you can take **add_docker_metadata** as an example.
+
+* Every processor has Run function. It behaves like a middleware. We can kustomize it. Also, we have to add our new fields to the _meta/fields.yml . Otherwise when processor is being loaded, our fields will not be seen in Elasticsearch.
+
+### Example:
+
+**libbeat/processor/add_docker_metadata/add_docker_metadata.go**
+```
+func (d *addDockerMetadata) Run(event *beat.Event) (*beat.Event, error) {
+
+  .
+  .
+  .
+
+  meta := common.MapStr{}
+  meta.Put("container.environment.name", "prod")
+  event.Fields.DeepUpdate(meta.Clone())
+
+  return event, nil
+}
+```
+
+**libbeat/processor/add_docker_metadata/_meta/fields.yml**
+```
+- name: container.environment
+  type: object
+  object_type: keyword
+  description: >
+    Image Tags.
+```
+

@@ -66,7 +66,7 @@ unit:
 ## crosscompile : Crosscompile all beats.
 .PHONY: crosscompile
 crosscompile:
-	@$(foreach var,filebeat winlogbeat metricbeat heartbeat auditbeat,$(MAKE) -C $(var) crosscompile || exit 1;)
+	@$(foreach var,filebeat,$(MAKE) -C $(var) crosscompile || exit 1;)
 
 ## coverage-report : Generates coverage report.
 .PHONY: coverage-report

@@ -28,3 +28,9 @@
           object_type: keyword
           description: >
             Image labels.
+
+        - name: container.environment
+          type: object
+          object_type: keyword
+          description: >
+            Image Tags.
