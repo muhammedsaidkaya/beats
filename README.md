@@ -127,11 +127,11 @@ go install github.com/magefile/mage@latest
 
 You need to run **make crosscompile** command. The below code block will create a binary named filebeat-linux-amd64 in *filebeat/build/bin* directory
 ```
-cd
+cd /opt/
 git clone https://github.com/picusnext/beats.git
 cd beats
 make crosscompile
-ls ~/beats/filebeat/build/bin/filebeat-linux-amd64
+ls /opt/beats/filebeat/build/bin/filebeat-linux-amd64
 ```
 
 ## Filebeat Custom Processor
