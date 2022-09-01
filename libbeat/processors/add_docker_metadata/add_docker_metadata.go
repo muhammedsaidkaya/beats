@@ -238,34 +238,39 @@ func (d *addDockerMetadata) Run(event *beat.Event) (*beat.Event, error) {
     meta.Put("container.environment.name", environment)
 
     //Tags
-    tags := jsonToMap(tagsObject)["result"].([]interface{})
-    _, err = meta.Put("container.environment.tags", tags)
+    tagsMap := jsonToMap(tagsObject)
+    if val, ok := tagsMap["result"]; ok {
+     //do something here
+     tags := val.([]interface{})
+     _, err = meta.Put("container.environment.tags", tags)
 
-    if err != nil {
-     d.log.Errorf("Error while putting custom labels: %v", err)
-    } else {
-     //Sha
-     var tempArr []string
-     for _, tag := range tags {
-      shaList := strings.Split(tag.(string), "-")
-      if len(shaList) == 1 {
-       tempArr = append(tempArr, shaList[0])
-      } else if len(shaList) > 1 {
-       tempArr = append(tempArr, shaList[1])
+     if err != nil {
+      d.log.Errorf("Error while putting custom labels: %v", err)
+     } else {
+      //Sha
+      var tempArr []string
+      for _, tag := range tags {
+       shaList := strings.Split(tag.(string), "-")
+       if len(shaList) == 1 {
+        tempArr = append(tempArr, shaList[0])
+       } else if len(shaList) > 1 {
+        tempArr = append(tempArr, shaList[1])
+       }
       }
-     }
-     d.log.Debugf("Running custom script - Sha: %v", tempArr)
-     meta.Put("container.environment.sha", tempArr)
+      d.log.Debugf("Running custom script - Sha: %v", tempArr)
+      meta.Put("container.environment.sha", tempArr)
 
-     //Caching
-     cacheValue := common.MapStr{
-      "name": environment,
-      "tags": tags,
-      "sha":  tempArr,
+      //Caching
+      cacheValue := common.MapStr{
+       "name": environment,
+       "tags": tags,
+       "sha":  tempArr,
+      }
+      customCache.SetCache(container.ID, cacheValue)
+      d.log.Debugf("Put object to the cache %v", cacheValue)
      }
-     customCache.SetCache(container.ID, cacheValue)
-     d.log.Debugf("Put object to the cache %v", cacheValue)
     }
+
    }
   } else {
    d.log.Debugf("Getting from cache cid=%v", container.ID)
