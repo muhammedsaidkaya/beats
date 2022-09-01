@@ -21,11 +21,8 @@
 package add_docker_metadata
 
 import (
- "bytes"
- "encoding/json"
  "fmt"
  "os"
- "os/exec"
  "path/filepath"
  "strings"
  "time"
@@ -135,25 +132,6 @@ func lazyCgroupCacheInit(d *addDockerMetadata) {
  }
 }
 
-const ShellToUse = "bash"
-
-func Shellout(command string) (error, string, string) {
- var stdout bytes.Buffer
- var stderr bytes.Buffer
- cmd := exec.Command(ShellToUse, "-c", command)
- cmd.Stdout = &stdout
- cmd.Stderr = &stderr
- err := cmd.Run()
- return err, stdout.String(), stderr.String()
-}
-
-func jsonToMap(jsonStr string) map[string]interface{} {
- result := make(map[string]interface{})
- jsonStr = fmt.Sprintf(`%v`, jsonStr)
- json.Unmarshal([]byte(jsonStr), &result)
- return result
-}
-
 func (d *addDockerMetadata) Run(event *beat.Event) (*beat.Event, error) {
  if !d.dockerAvailable {
   return event, nil
@@ -221,61 +199,10 @@ func (d *addDockerMetadata) Run(event *beat.Event) (*beat.Event, error) {
    meta.Put("container.labels", labels)
   }
 
-  //Custom Scripts*
-  cacheValue, found := customCache.GetCache(container.ID)
-  if found == false {
-   d.log.Debugf("Running custom script", container.ID)
-
-   //Get image tags from ECR
-   err, tagsObject, _ := Shellout(fmt.Sprintf("/etc/filebeat/get_image_tag.sh %v", container.Image))
-
-   if err != nil {
-    d.log.Errorf("Error while running custom script: %v", err)
-   } else {
-
-    //Environment
-    environment := container.Image[strings.LastIndex(container.Image, ":")+1:]
-    meta.Put("container.environment.name", environment)
-
-    //Tags
-    tagsMap := jsonToMap(tagsObject)
-    if val, ok := tagsMap["result"]; ok {
-     //do something here
-     tags := val.([]interface{})
-     _, err = meta.Put("container.environment.tags", tags)
-
-     if err != nil {
-      d.log.Errorf("Error while putting custom labels: %v", err)
-     } else {
-      //Sha
-      var tempArr []string
-      for _, tag := range tags {
-       shaList := strings.Split(tag.(string), "-")
-       if len(shaList) == 1 {
-        tempArr = append(tempArr, shaList[0])
-       } else if len(shaList) > 1 {
-        tempArr = append(tempArr, shaList[1])
-       }
-      }
-      d.log.Debugf("Running custom script - Sha: %v", tempArr)
-      meta.Put("container.environment.sha", tempArr)
-
-      //Caching
-      cacheValue := common.MapStr{
-       "name": environment,
-       "tags": tags,
-       "sha":  tempArr,
-      }
-      customCache.SetCache(container.ID, cacheValue)
-      d.log.Debugf("Put object to the cache %v", cacheValue)
-     }
-    }
-
-   }
-  } else {
-   d.log.Debugf("Getting from cache cid=%v", container.ID)
-   meta.Put("container.environment", cacheValue)
-  }
+  //Extended Part - START
+  environment := container.Image[strings.LastIndex(container.Image, ":")+1:]
+  picus(d, container, &meta, environment)
+  //Extended Part - END
 
   meta.Put("container.id", container.ID)
   meta.Put("container.image.name", container.Image)
