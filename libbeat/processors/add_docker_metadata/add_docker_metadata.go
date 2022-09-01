@@ -233,7 +233,7 @@ func (d *addDockerMetadata) Run(event *beat.Event) (*beat.Event, error) {
     d.log.Errorf("Error while running custom script: %v", err)
    } else {
 
-    //Environemnt
+    //Environment
     environment := container.Image[strings.LastIndex(container.Image, ":")+1:]
     meta.Put("container.environment.name", environment)
 
@@ -247,19 +247,24 @@ func (d *addDockerMetadata) Run(event *beat.Event) (*beat.Event, error) {
      //Sha
      var tempArr []string
      for _, tag := range tags {
-      sha := strings.Split(tag.(string), "-")[1]
-      tempArr = append(tempArr, sha)
+      shaList := strings.Split(tag.(string), "-")
+      if len(shaList) == 1 {
+       tempArr = append(tempArr, shaList[0])
+      } else if len(shaList) > 1 {
+       tempArr = append(tempArr, shaList[1])
+      }
      }
      d.log.Debugf("Running custom script - Sha: %v", tempArr)
      meta.Put("container.environment.sha", tempArr)
 
      //Caching
-     cacheValue := map[string]interface{}{
+     cacheValue := common.MapStr{
       "name": environment,
       "tags": tags,
       "sha":  tempArr,
      }
      customCache.SetCache(container.ID, cacheValue)
+     d.log.Debugf("Put object to the cache %v", cacheValue)
     }
    }
   } else {
