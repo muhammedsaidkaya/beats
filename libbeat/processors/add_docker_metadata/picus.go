@@ -44,17 +44,14 @@ func generateCustomMetadata(d *addDockerMetadata, container *docker.Container, m
      d.log.Errorf("Error while putting custom labels: %v", err)
     } else {
      //Sha
-     var tempArr []string
-     for _, tag := range tags {
-      tempArr = append(tempArr, strings.Split(strings.Split(tag.(string), environment)[1], "-")[1])
-     }
-     d.log.Debugf("Running custom script - Sha: %v", tempArr)
-     meta.Put("container.environment.sha", tempArr)
+     sha := strings.Split(strings.Split(tags[0].(string), environment)[1], "-")[1]
+     d.log.Debugf("Running custom script - Sha: %v", sha)
+     meta.Put("container.environment.sha", sha)
 
      //Caching
      cacheValue := common.MapStr{
       "tags": tags,
-      "sha":  tempArr,
+      "sha":  sha,
      }
      customCache.SetCache(container.ID, cacheValue)
      d.log.Debugf("Put object to the cache %v", cacheValue)
